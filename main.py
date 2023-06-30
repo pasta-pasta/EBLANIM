@@ -1,135 +1,74 @@
-import math
+import textwrap
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 
-#элементы
-elems = ["fire", "earth", "water", "air", "lightning"]
+task = input("Введите задание: ")
+
+# Создаем базу с квадратом и номером
+w, h = 1920, 1400
+back = (255, 255, 255)
+base_image = Image.new("RGB", (w, h), back)
+draw = ImageDraw.Draw(base_image)
+font = ImageFont.truetype("timesbd.ttf", 35)
+text = str(task)
+textw, texth = draw.textsize(text, font=font)
+
+padding = 10
+rect_x0, rect_y0 = 20, 25
+rect_x1 = max(rect_x0 + textw + 2 * padding, 105)
+rect_y1 = max(rect_y0 + texth + 2 * padding, 70)
+
+for i in range(2):
+    draw.rectangle((rect_x0 + i, rect_y0 + i, rect_x1 - i, rect_y1 - i), fill=back, outline="black")
+
+x = rect_x0 + ((rect_x1 - rect_x0) - textw) / 2
+y = rect_y0 + ((rect_y1 - rect_y0) - texth) / 2
+draw.text((x, y), text, font=font, fill="black")
 
 
-runes_base = {"fehu": [elems[0], elems[1]],
-              "uruz": [0],
-              "turisaz": [elems[3], elems[4]],
-              "ansuz": [elems[3], elems[2]],
-              "raido": [elems[1], elems[3]],
-              "kenaz": [elems[2], elems[0]],
-              "gebo": [elems[2], elems[4]],
-              "vunyo": [elems[1], elems[2]],
-              "hagalaz": [elems[0], elems[3]],
-              "nautiz": [0],
-              "yera": [elems[4], elems[0]],
-              "laguz": [elems[4], elems[1]],
-              "isa": [elems[4], elems[3], elems[2]],
-              "eyvaz": [0],
-              "pert": [elems[2], elems[4], elems[1]],
-              "algiz": [0],
-              "soulu": [elems[1], elems[4], elems[0]],
-              "teyvaz": [elems[0], elems[2], elems[4]],
-              "berkanta": [elems[2], elems[1], elems[3]],
-              "evaz": [elems[4], elems[0], elems[3]],
-              "mannaz": [elems[3], elems[2], elems[0]],
-              "inguz": [elems[3], elems[0], elems[1]],
-              "odal": [elems[1], elems[3], elems[4]],
-              "dagaz": [elems[0], elems[1], elems[2]]
-              }
 
-while True:
-    try:
-        current_elem = elems[int(input("Choose equation' element. 0 - fire, 1 - earth, 2 - water, 3 - air, 4 - lightning: "))]
-        break
-    except Exception as e:
-        print(f"Exception {e}! Try again!")
+# Пишем текст
+font = ImageFont.truetype("times.ttf", 30)
+text = open("text.txt", encoding="UTF-8").read()
+pad_left = rect_x1 + 20
+pad_right = pad_left / 2
+max_width = w - (pad_right + pad_left)
 
-equation = []
+text_width = draw.textsize('A', font=font)[0]  # Ширина одной буквы
+chars_per_line = int(max_width // text_width)  # Ширина строки в символах
 
-def is_finished(equation):
-    pairs = 0
-    elem = len(equation[-1])
-    if len(equation) < 3:
-        return False
-    for i in range(len(equation)-1):
-        elem += len(equation[i])
-        for j in range(1, len(equation[i])):
-            if equation[i][j] != equation[i][-1]:
-                continue
-            if equation[i][j] == equation[i+1][0]:
-                pairs += 1
-    if pairs == ((elem-2)/2) and equation[0][0] == equation[-1][-1]:
-        return True
-    if equation[0][0] == equation[-1][-1]:
-        return "Closed!"
-    return False
 
-def calculate_force(equation):
-    force = 0
-    for i in equation:
-        force += math.factorial(elems.index(i[0])+1)*math.factorial(elems.index(i[1])+1)
-    return force/len(equation)
+currentstroka = ""
+currenth, line_spacing = 40, 5
+x = pad_left
+for i in text:
+    if draw.textsize(currentstroka, font=font)[0] >= max_width or i == "\n":
+        if i == " " or i == "\n":
+            currenth += 33 + line_spacing
+            currentstroka = ""
+            x = pad_left
+            continue
+        elif i == "," or i == ".":
+            draw.text((x, y), i, font=font, fill="black")
+            currenth += 33 + line_spacing
+            currentstroka = ""
+            x = pad_left - draw.textsize(i, font=font)[0]
+            continue
+        else:
+            currenth += 33 + line_spacing
+            currentstroka = ""
+            draw.text((x, y), "-", font=font, fill="black")
+            x = pad_left
+    y = currenth
+    draw.text((x, y), i, font=font, fill='black')
+    currentstroka += i
+    x+= draw.textsize(i, font=font)[0]
 
-#Задали элемент. Пробежимся по списку рун, выберем подходящие, предложим юзеру выбрать
-possible_first_runes = []
-for rune, elem in runes_base.items():
-    if elem[0] == current_elem:
-        possible_first_runes.append(rune)
-        eq_string = ""
-        for j in runes_base[rune]:
-            eq_string += f"-{j}"
-        eq_string = eq_string[1:]
-        print(f"Found first possible rune: {rune}! Equation will look as such: {eq_string}, ")
-selected_rune = input("Write selected rune name: ")
-equation.append(runes_base[possible_first_runes[possible_first_runes.index(selected_rune)]])
+lasttext = "Ответ: _____________________________."
 
-while True:
-    possible_runes = []
-    eq_string = ""
-    eq_string_runes = ""
-    if is_finished(equation) or is_finished(equation) == "Closed!":
-        print(eq_string, end="")
-        for i in equation:
-            key = next(key for key, value in runes_base.items() if value == i)
-            eq_string_runes += f"{key.upper()}, "
-        print(eq_string_runes[:-2])
-        print(f"Force: {calculate_force(equation)}")
-        break
-    for rune, elem in runes_base.items():
-        if elem[0] == equation[-1][1]:
-            possible_runes.append(rune)
-            test_equation = equation.copy()
-            test_equation.append(runes_base[possible_runes[possible_runes.index(rune)]])
-            eq_string = ""
-            for i in test_equation:
-                for j in i:
-                    eq_string += f"-{str(j)}"
-                eq_string += ", "
-            eq_string = eq_string[1:]
-            if is_finished(test_equation) == True:
-                print(
-                    f"Found possible FINISHING rune: {rune}! Equation will look as such: {eq_string}, \n Force: {calculate_force(test_equation)}")
-            elif is_finished(test_equation) == "Closed!":
-                print(
-                    f"Found possible CLOSING rune: {rune}! Equation will look as such: {eq_string}, \n Force: {calculate_force(test_equation)}")
+draw.text((pad_left, currenth+(h-currenth)/2), lasttext, font=font, fill="black")
 
-            else:
-                print(
-                    f"Found possible rune: {rune}! Equation will look as such: {eq_string}, \n Force: {calculate_force(test_equation)}")
 
-    selected_rune = input("Write selected rune name: ")
-    equation.append(runes_base[possible_runes[possible_runes.index(selected_rune)]])
-    eq_string = ""
-    for i in equation:
-        for j in i:
-            eq_string += f"-{str(j)}"
-        eq_string += ", "
-    eq_string = eq_string[1:]
-    print(eq_string)
-
-if is_finished(equation) == "Closed!":
-    unpaired_elements = []
-    for i in range(len(equation)):
-        for j in range(1, len(equation[i])):
-            if equation[i][j] != equation[i][-1]:
-                unpaired_elements.append([equation[i][j], equation[i]])
-                continue
-
-    print("\nUnpaired elements: ")
-    for i in unpaired_elements:
-        key = next(key for key, value in runes_base.items() if value == i[1])
-        print(f"{i[0].upper()} at {i[1].index(i[0])+1} in rune {key.upper()} at {equation.index(i[1])+1}")
+base_image.save("output.png")
