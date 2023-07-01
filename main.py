@@ -46,28 +46,82 @@ currenth, line_spacing = 40, 5
 x = pad_left
 isbold = False
 isitalic = False
+centered = False
 curfont = "st"
+breaknuto = False
 for i in text:
+    breaknuto = False
     if i == "/":
         if isitalic == False:
             isitalic = True
+            if centered == True:
+                currentstroka += i
             curfont = "it"
             continue
         else:
             isitalic = False
+            if centered == True:
+                currentstroka += i
             curfont = "st"
             continue
     elif i == "&":
         if isbold == False:
             isbold = True
+            if centered == True:
+                currentstroka += i
             curfont = "bd"
             continue
         else:
             isbold = False
+            if centered == True:
+                currentstroka += i
             curfont = "st"
             continue
+
+    if i == "@":
+        if centered == False:
+            centered = True
+            currenth += 33 + line_spacing
+            currentstroka = ""
+        else:
+            centered = False
+            x = (w-draw.textsize(currentstroka, font=fonts[curfont])[0])/2
+            for j in currentstroka:
+                if j == "/":
+                    if isitalic == False:
+                        isitalic = True
+                        curfont = "it"
+                        continue
+                    else:
+                        isitalic = False
+                        curfont = "st"
+                        continue
+                elif j == "&":
+                    if isbold == False:
+                        isbold = True
+                        curfont = "bd"
+                        continue
+                    else:
+                        isbold = False
+                        curfont = "st"
+                        continue
+                draw.text((x, currenth), j, font=fonts[curfont], fill="black")
+                x += draw.textsize(j, font=fonts[curfont])[0]
+            currenth += 33 + line_spacing
+            currentstroka = ""
+            x = pad_left
+
+    while centered == True:
+        if i != "@":
+            currentstroka += i
+        breaknuto = True
+        break
+
+    if breaknuto == True:
+        continue
+
     if draw.textsize(currentstroka, font=fonts[curfont])[0] >= max_width or i == "\n":
-        if i == " " or i == "\n":
+        if i == " " or i == "\n" or i == "@":
             currenth += 33 + line_spacing
             currentstroka = ""
             x = pad_left
@@ -84,7 +138,8 @@ for i in text:
             draw.text((x, y), "-", font=fonts[curfont], fill="black")
             x = pad_left
     y = currenth
-    draw.text((x, y), i, font=fonts[curfont], fill='black')
+    if i != "@":
+        draw.text((x, y), i, font=fonts[curfont], fill='black')
     currentstroka += i
     x+= draw.textsize(i, font=fonts[curfont])[0]
 
